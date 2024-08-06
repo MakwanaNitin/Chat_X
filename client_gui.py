@@ -1,3 +1,4 @@
+import datetime
 import tkinter as tk
 import tkinter.scrolledtext as scrolledtext
 from tkinter import colorchooser
@@ -22,7 +23,7 @@ class ClientGUI:
         self.root = tk.Tk()
         self.root.title("BlackRose")
         self.root.tk.call("wm", "iconphoto", self.root._w,
-                          tk.PhotoImage(file="Logo\Logo.png"))
+                          tk.PhotoImage(file="Logo\\Logo.png"))
         # self.root.resizable(0, 0)
 
         # Create frames for login and registration
@@ -41,7 +42,7 @@ class ClientGUI:
         self.options_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="Options", menu=self.options_menu)
         self.options_menu.add_command(
-            label="Toggle Theme", command=self.toggle_theme)
+            label="Switch Themes", command=self.toggle_theme)
         self.options_menu.add_command(
             label="Custom Theme", command=self.custom_theme)
         self.options_menu.add_command(
@@ -88,6 +89,8 @@ class ClientGUI:
         password_label.grid(row=3, column=0, padx=10, pady=10)
         self.password_entry = tk.Entry(self.login_frame, show="*", width=30)
         self.password_entry.grid(row=3, column=1, padx=10, pady=10)
+        #bind the enter key in password_entry
+        self.password_entry.bind("<Return>", self.login)
 
         login_button = tk.Button(
             self.login_frame, text="Login", width=20, height=2, command=self.login_check_up)
@@ -114,6 +117,8 @@ class ClientGUI:
         self.new_password_entry = tk.Entry(
             self.registration_frame, show="*", width=30)
         self.new_password_entry.grid(row=1, column=1, padx=10, pady=10)
+        #bind the enter key in new_password_entry
+        self.new_password_entry.bind("<Return>", self.register)
 
         register_button = tk.Button(
             self.registration_frame, text="Register", width=20, height=2, command=self.register_user)
@@ -150,6 +155,9 @@ class ClientGUI:
             self.chat_frame, text="Send", command=self.write)
         self.send_button.config(font=self.default_font)
         self.send_button.pack(padx=20, pady=5)
+        #bind the enter key
+        self.send_button.bind("<Return>", self.write)
+        
 
     def login_check_up(self):
         # Check if the file exists
@@ -206,16 +214,32 @@ class ClientGUI:
 
             if user_password and user_password[0] == password:
                 self.nickname = username
-                print(f"Login successful for {username}")
+                #to store this into the Log.csv file with time and date, also the duration of the running.
+                with open("Log.csv", "a", newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.nickname, "logged in"])
+                    # to have this all stored in the debugging.txt & LogOfConnection.txt 
+                    with open("debugging.txt", "a") as f:
+                        f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
+                    with open("LogOfConnection.txt", "a") as f:
+                        f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
+                # print(f"Login successful for {username}")
+
                 self.start_chat()
             else:
                 self.result_label.config(
                     text="Invalid username or password.", fg="red")
-                print("Invalid password.")
+                    #store this inside the Error.txt
+                with open("Error.txt", "a") as f:
+                    f.write(f"Invalid username or password for {username} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")                                                            
+                # print("Invalid password.")
         else:
             self.result_label.config(
                 text="Invalid username or password.", fg="red")
-            print("Invalid username.")
+            #store this inside the Error.txt
+            with open("Error.txt", "a") as f:
+                f.write(f"Invalid username or password for {username} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            # print("Invalid username.")
 
     def register_user(self):
         new_username = self.new_username_entry.get()

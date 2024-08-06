@@ -2,7 +2,7 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import messagebox
-import time
+from datetime import datetime
 
 
 clients = []
@@ -53,14 +53,20 @@ def start_server(host, port):
     #to have this stored on the LogsOfConnection.txt file with the time and date using module.
     with open(Log_For_Connections, 'a') as file:
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        file.write(f"{current_time} - {host}:{port} - {len(clients)}")
+        file.write(f"{current_time} - {host}:{port} - {len(clients)}\n" + "Waiting For Connections\n")
 
 
     # print(f"Server started on {host}:{port}, waiting for connections...")
 
     while True:
         client_socket, addr = server.accept()
-        print(f"Connection from {addr}")
+        # print(f"Connection from {addr}")
+        #storing the connection data into the file named LogsOfConnection.txt.
+        with open(Log_For_Connections, 'a') as file:
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            file.write(f'{current_time} : Connection from {addr}\n')
+
+
         threading.Thread(target=handle_client, args=(
             client_socket, addr)).start()
 
@@ -68,7 +74,7 @@ def start_server(host, port):
 def show_server_info(host, port):
     root = tk.Tk()
     root.title("Server Info")
-    label = tk.Label(root, text=f"Server running on {host}:{port}")
+    label = tk.Label(root, text=f"Server running on {host}\n Port : {port}")
     label.pack(padx=20, pady=20)
     tk.Button(root, text="OK", command=root.destroy).pack(pady=10)
     root.mainloop()
