@@ -1,6 +1,7 @@
 import socket
 import threading
 
+Error_file = "Database\\Error.txt"
 
 class ClientCore:
     def __init__(self, host, port, nickname, update_chat_callback):
@@ -29,7 +30,9 @@ class ClientCore:
                 if message:
                     self.update_chat_callback(message)
             except Exception as e:
-                print(f"Error receiving message: {e}")
+                #save this inside the error_file.
+                with open(Error_file, "a") as f:
+                    f.write(f"Error receiving message: {e}\n [Client_core-file]")
                 self.running = False
 
     def disconnect(self):

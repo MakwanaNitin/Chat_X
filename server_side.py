@@ -11,7 +11,10 @@ Log_For_Connections = r'Database\\LogOfConnecting.txt'
 
 def handle_client(client_socket, addr):
     nickname = client_socket.recv(1024).decode('utf-8')
-    print(f"{nickname} connected from {addr}.")
+    #store this above in logsOfConnection.txt
+    with open(Log_For_Connections, 'a') as f:
+        f.write(f"{nickname} connected from {addr}.")
+
     clients.append(client_socket)
     client_socket.send("Welcome to the chat!".encode('utf-8'))
     while True:
@@ -77,20 +80,43 @@ def copy_to_clipboard(text):
 
 def show_server_info(host, port):
     root = tk.Tk()
-    root.title("Server Info")
-
-    label = tk.Label(root, text=f"Server running on {host}\nPort: {port}")
-    label.pack(padx=20, pady=20)
-
-    def copy_info():
-        copy_to_clipboard(f"{host}:{port}")
+    root.title("BlackRose Server Side")
+    root.tk.call("wm", "iconphoto", root._w,
+                 tk.PhotoImage(file="Logo\\Server_Logo.png"))
+    
+    def copy_info_IP():
+        copy_to_clipboard(f"{host}")
         messagebox.showinfo(
-            "Copied", "IP address and port copied to clipboard.")
+            "Copied", "IP address copied to clipboard.")
+        
+    label_IP = tk.Label(root, text=f"Server running on {host}")
+    label_IP.pack(padx=20, pady=20)
+    copy_button_IP = tk.Button(root, text="Copy-IP", command=copy_info_IP)
+    copy_button_IP.pack(pady=10)
 
-    copy_button = tk.Button(root, text="Copy", command=copy_info)
-    copy_button.pack(pady=10)
+    def copy_info_port():
+        copy_to_clipboard(f"{port}")
+        messagebox.showinfo(
+            "Copied", "Port copied to clipboard.")
+    label_Port = tk.Label(root, text=f"Server Using Port: {port}")
+    label_Port.pack(padx=20,pady=20)
+    copy_button_port = tk.Button(
+        root, text="Copy-Port", command=copy_info_port)
+    copy_button_port.pack(pady=10)
 
-    tk.Button(root, text="OK", command=root.destroy).pack(pady=10)
+    
+    # def copy_info_IP():
+    #     copy_to_clipboard(f"{host}:{port}")
+    #     messagebox.showinfo(
+    #         "Copied", "IP address copied to clipboard.")
+        
+    # def copy_info_port():
+    #     copy_to_clipboard(f"{host}:{port}")
+    #     messagebox.showinfo(
+    #         "Copied", "Port copied to clipboard.")
+
+
+    tk.Button(root, text="End", command=root.destroy).pack(pady=10)
     root.mainloop()
 
 

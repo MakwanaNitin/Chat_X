@@ -220,7 +220,8 @@ class ClientGUI:
                 
                 with open(Log_file, "a", newline='') as f:
                     writer = csv.writer(f)
-                    writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.nickname, "logged in"])
+                    writer.writerow([datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"), "logged in", self.nickname])
                     self.login_success = True
                     
 
