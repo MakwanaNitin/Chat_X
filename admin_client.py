@@ -1,128 +1,144 @@
 import tkinter as tk
-import tkinter.scrolledtext as scrolledtext
-from tkinter import simpledialog
-import threading
-import socket
-
-class AdminClient:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.host, self.port))
-
-        self.nickname = "admin:Admin"
-        self.socket.send(self.nickname.encode('utf-8'))
-
-        self.gui_done = False
-        self.running = True
-        self.nicknames = {}
-
-        gui_thread = threading.Thread(target=self.gui_loop)
-        receive_thread = threading.Thread(target=self.receive)
-        gui_thread.start()
-        receive_thread.start()
-
-    def gui_loop(self):
-        self.win = tk.Tk()
-        self.win.title("Admin Panel - BlackRose")
-
-        self.chat_label = tk.Label(
-            self.win, text="Admin Chat", font=("Arial", 12))
-        self.chat_label.pack(padx=20, pady=5)
-
-        self.text_area = scrolledtext.ScrolledText(self.win)
-        self.text_area.pack(padx=20, pady=5)
-        self.text_area.config(state='disabled')
-
-        self.user_list_label = tk.Label(
-            self.win, text="Online Users", font=("Arial", 12))
-        self.user_list_label.pack(padx=20, pady=5)
-
-        self.user_list_area = scrolledtext.ScrolledText(self.win, height=10)
-        self.user_list_area.pack(padx=20, pady=5)
-        self.user_list_area.config(state='disabled')
-
-        self.msg_label = tk.Label(self.win, text="Message", font=("Arial", 12))
-        self.msg_label.pack(padx=20, pady=5)
-
-        self.input_area = tk.Text(self.win, height=3)
-        self.input_area.pack(padx=20, pady=5)
-        self.input_area.bind('<Return>', self._send_message_with_enter)
-
-        self.send_button = tk.Button(
-            self.win, text="Send", command=self.send_message)
-        self.send_button.pack(padx=20, pady=5)
-
-        self.kick_button = tk.Button(
-            self.win, text="Kick User", command=self.kick_user)
-        self.kick_button.pack(padx=20, pady=5)
-
-        self.gui_done = True
-
-        self.win.protocol("WM_DELETE_WINDOW", self.stop)
-        self.win.mainloop()
-
-    def _send_message_with_enter(self, event):
-        self.send_message()
-        return "break"
-
-    def send_message(self):
-        message = self.input_area.get("1.0", "end").strip()
-        self.socket.send(message.encode('utf-8'))
-        self.input_area.delete('1.0', 'end')
-
-    def receive(self):
-        while self.running:
-            try:
-                message = self.socket.recv(1024).decode('utf-8')
-                if message == 'NICKNAME':
-                    self.socket.send(self.nickname.encode('utf-8'))
-                elif message.startswith('USERLIST'):
-                    self.nicknames = {}
-                    users = message[8:].split(',')
-                    for user in users:
-                        self.nicknames[user] = user
-                    if self.gui_done:
-                        self.update_user_list()
-                else:
-                    if self.gui_done:
-                        self.text_area.config(state='normal')
-                        self.text_area.insert('end', message + '\n')
-                        self.text_area.yview('end')
-                        self.text_area.config(state='disabled')
-            except ConnectionAbortedError:
-                break
-            except:
-                print("Error")
-                self.socket.close()
-                break
-
-    def update_user_list(self):
-        self.user_list_area.config(state='normal')
-        self.user_list_area.delete('1.0', 'end')
-        for nickname in self.nicknames.values():
-            self.user_list_area.insert('end', f'{nickname}\n')
-        self.user_list_area.config(state='disabled')
-
-    def kick_user(self):
-        user_to_kick = simpledialog.askstring(
-            "Kick User", "Enter the nickname of the user to kick:", parent=self.win)
-        if user_to_kick in self.nicknames.values():
-            self.socket.send(f'KICK {user_to_kick}'.encode('utf-8'))
-            for client, nickname in list(self.nicknames.items()):
-                if nickname == user_to_kick:
-                    del self.nicknames[client]
-                    break
-            self.update_user_list()
-
-    def stop(self):
-        self.running = False
-        self.win.destroy()
-        self.socket.close()
+from tkinter import colorchooser, messagebox
 
 
-if __name__ == "__main__":
-    HOST = 'localhost'
-    PORT = 5555
-    admin_client = AdminClient(HOST, PORT)
+class ChatApp:
+    def __init__(self, root):
+        self.root = root
+        self.colors = {}
+        self.theme = "light"  # Default theme
+
+        # Initialize GUI components
+        self.chat_frame = tk.Frame(root)
+        self.chat_label = tk.Label(self.chat_frame, text="Chat")
+        self.text_area = tk.Text(self.chat_frame)
+        self.msg_label = tk.Label(self.chat_frame, text="Messages")
+        self.input_area = tk.Entry(self.chat_frame)
+
+        self.chat_frame.pack()
+        self.chat_label.pack()
+        self.text_area.pack()
+        self.msg_label.pack()
+        self.input_area.pack()
+
+        # Setup initial theme
+        self._apply_theme()
+
+        # Example button to change theme
+        self.theme_button = tk.Button(
+            root, text="Set Custom Theme", command=self.custom_theme)
+        self.theme_button.pack()
+
+        # Button to open Admin Panel
+        self.admin_button = tk.Button(
+            root, text="Open Admin Panel", command=self.open_admin_panel)
+        self.admin_button.pack()
+
+    def custom_theme(self):
+        # Allow users to set custom colors
+        bg_color = colorchooser.askcolor(title="Choose Background Color")[1]
+        fg_color = colorchooser.askcolor(title="Choose Foreground Color")[1]
+        textarea_bg_color = colorchooser.askcolor(
+            title="Choose Textarea Background Color")[1]
+        textarea_fg_color = colorchooser.askcolor(
+            title="Choose Textarea Foreground Color")[1]
+
+        if bg_color and fg_color and textarea_bg_color and textarea_fg_color:
+            self.colors["custom"] = {
+                "bg": bg_color,
+                "fg": fg_color,
+                "textarea_bg": textarea_bg_color,
+                "textarea_fg": textarea_fg_color
+            }
+            self.theme = "custom"
+            self._apply_theme()
+
+    def _apply_theme(self):
+        # Define the default themes
+        colors = {
+            "light": {
+                "bg": "lightgray",
+                "fg": "black",
+                "textarea_bg": "white",
+                "textarea_fg": "black"
+            },
+            "dark": {
+                "bg": "black",
+                "fg": "white",
+                "textarea_bg": "gray",
+                "textarea_fg": "white"
+            },
+            "custom": {
+                "bg": "lightgray",
+                "fg": "black",
+                "textarea_bg": "white",
+                "textarea_fg": "black"
+            }
+        }
+
+        # Update with custom colors if any
+        colors.update(self.colors)
+
+        # Apply the selected theme colors
+        theme_colors = colors.get(self.theme, colors["light"])
+        self.chat_frame.configure(bg=theme_colors["bg"])
+        self.chat_label.configure(bg=theme_colors["bg"], fg=theme_colors["fg"])
+        self.text_area.configure(
+            bg=theme_colors["textarea_bg"], fg=theme_colors["textarea_fg"])
+        self.msg_label.configure(bg=theme_colors["bg"], fg=theme_colors["fg"])
+        self.input_area.configure(
+            bg=theme_colors["textarea_bg"], fg=theme_colors["textarea_fg"])
+
+    def open_admin_panel(self):
+        AdminPanel(self)
+
+
+class AdminPanel:
+    def __init__(self, chat_app):
+        self.chat_app = chat_app
+        self.root = tk.Toplevel(chat_app.root)
+        self.root.title("Admin Panel")
+
+        # Add components for admin functionalities
+        self.user_list_label = tk.Label(self.root, text="User List")
+        self.user_list = tk.Listbox(self.root)
+
+        self.log_label = tk.Label(self.root, text="Chat Logs")
+        self.log_text = tk.Text(self.root, state=tk.DISABLED)
+
+        self.theme_label = tk.Label(self.root, text="Theme Management")
+        self.theme_button = tk.Button(
+            self.root, text="Set Custom Theme", command=chat_app.custom_theme)
+
+        self.user_list_label.pack()
+        self.user_list.pack()
+        self.log_label.pack()
+        self.log_text.pack()
+        self.theme_label.pack()
+        self.theme_button.pack()
+
+        # Dummy data for demonstration
+        self._populate_dummy_data()
+
+    def _populate_dummy_data(self):
+        # Populate the user list with dummy data
+        users = ["User1", "User2", "User3"]
+        for user in users:
+            self.user_list.insert(tk.END, user)
+
+        # Populate the chat logs with dummy data
+        logs = [
+            "User1: Hello!",
+            "User2: Hi there!",
+            "User3: Good morning!"
+        ]
+        self.log_text.configure(state=tk.NORMAL)
+        for log in logs:
+            self.log_text.insert(tk.END, log + "\n")
+        self.log_text.configure(state=tk.DISABLED)
+
+
+# Create the main application window
+root = tk.Tk()
+app = ChatApp(root)
+root.mainloop()

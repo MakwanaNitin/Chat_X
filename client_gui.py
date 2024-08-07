@@ -1,5 +1,7 @@
-import datetime
+import csv
+from datetime import datetime
 import tkinter as tk
+from tkinter import messagebox
 import tkinter.scrolledtext as scrolledtext
 from tkinter import colorchooser
 from tkinter import font as tkfont
@@ -12,7 +14,7 @@ file_path = r'Database\\User.csv'
 Log_file = r'Database\\Logs.csv'
 Error_file = r'Database\\Error.txt'
 Debugging_file = r'Database\\Debugging.txt'
-
+Log_For_Connections = r'Database\\LogOfConnecting.txt'
 
 class ClientGUI:
     def __init__(self):
@@ -90,7 +92,7 @@ class ClientGUI:
         self.password_entry = tk.Entry(self.login_frame, show="*", width=30)
         self.password_entry.grid(row=3, column=1, padx=10, pady=10)
         #bind the enter key in password_entry
-        self.password_entry.bind("<Return>", self.login)
+        self.password_entry.bind("<Return>", self._write_with_enter)
 
         login_button = tk.Button(
             self.login_frame, text="Login", width=20, height=2, command=self.login_check_up)
@@ -118,7 +120,7 @@ class ClientGUI:
             self.registration_frame, show="*", width=30)
         self.new_password_entry.grid(row=1, column=1, padx=10, pady=10)
         #bind the enter key in new_password_entry
-        self.new_password_entry.bind("<Return>", self.register)
+        self.new_password_entry.bind("<Return>", self._write_with_enter)
 
         register_button = tk.Button(
             self.registration_frame, text="Register", width=20, height=2, command=self.register_user)
@@ -157,15 +159,15 @@ class ClientGUI:
         self.send_button.pack(padx=20, pady=5)
         #bind the enter key
         self.send_button.bind("<Return>", self.write)
-        
+
 
     def login_check_up(self):
         # Check if the file exists
         if not os.path.isfile(file_path):
             messagebox.showerror("Error", "User data file not found.")
             #to have this error stored in Error.txt file.
-            with open("Error.txt", "a") as f:
-                f.write("User data file not found.[login_check_up]\n")
+            with open(Error_file, "a") as f:
+                f.write("User data file not found. [login_check_up]\n")
             return
 
         # Attempt to read the CSV file
@@ -174,8 +176,8 @@ class ClientGUI:
         except pd.errors.EmptyDataError:
             messagebox.showerror("Error", "User data file is empty.")
             # to have this error stored in Error.txt file.
-            with open("Error.txt", "a") as f:
-                f.write("User data file is empty.[login_check_up]\n")
+            with open(Error_file, "a") as f:
+                f.write("User data file is empty. [login_check_up]\n")
             return
 
         # Get username and password from the entries
@@ -189,7 +191,7 @@ class ClientGUI:
 
 
         #to have this all stored in the debugging.txt
-        with open("debugging.txt", "a") as f:
+        with open(Debugging_file, "a") as f:
             f.write(f"Trying to login with username: {username} and password: {password}\
                     \nDataframe head: \n{df.head()} \n")
 
@@ -206,7 +208,7 @@ class ClientGUI:
 
 
             # to have this all stored in the debugging.txt
-            with open("debugging.txt", "a") as f:
+            with open(Debugging_file, "a") as f:
                 f.write(f"Stored data for {username}: {user_data}\n")
                 f.write(f"Stored password for {username}: {user_password}\n")
 
@@ -214,15 +216,20 @@ class ClientGUI:
 
             if user_password and user_password[0] == password:
                 self.nickname = username
-                #to store this into the Log.csv file with time and date, also the duration of the running.
-                with open("Log.csv", "a", newline='') as f:
+                #to store this into the Log.csv file using pandas with time and date, also the duration of the running.
+                
+                with open(Log_file, "a", newline='') as f:
                     writer = csv.writer(f)
                     writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.nickname, "logged in"])
+                    self.login_success = True
+                    
+
+                
                     # to have this all stored in the debugging.txt & LogOfConnection.txt 
-                    with open("debugging.txt", "a") as f:
-                        f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
-                    with open("LogOfConnection.txt", "a") as f:
-                        f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
+                with open(Debugging_file, "a") as f:
+                    f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
+                with open(Log_For_Connections, "a") as f:
+                    f.write(f"Logged in successfully with username: {username} at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n")
                 # print(f"Login successful for {username}")
 
                 self.start_chat()
@@ -230,15 +237,15 @@ class ClientGUI:
                 self.result_label.config(
                     text="Invalid username or password.", fg="red")
                     #store this inside the Error.txt
-                with open("Error.txt", "a") as f:
+                with open(Error_file, "a") as f:
                     f.write(f"Invalid username or password for {username} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")                                                            
                 # print("Invalid password.")
         else:
             self.result_label.config(
                 text="Invalid username or password.", fg="red")
             #store this inside the Error.txt
-            with open("Error.txt", "a") as f:
-                f.write(f"Invalid username or password for {username} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            with open(Error_file, "a") as f:
+                f.write(f"Invalid username or password for {username} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             # print("Invalid username.")
 
     def register_user(self):
@@ -260,7 +267,7 @@ class ClientGUI:
         if new_username in df['username'].values:
             messagebox.showerror("Error", "Username already exists.")
             # to have this error stored in Error.txt file.
-            with open("Error.txt", "a") as f:
+            with open(Error_file, "a") as f:
                 f.write(f"Error: Username {new_username} already exists.\n")
 
         else:
@@ -269,7 +276,7 @@ class ClientGUI:
             df.to_csv(file_path, index=False)
             messagebox.showinfo("Success", "Registration successful.")
             # to have this all stored in the debugging.txt along with username and password.
-            with open("debugging.txt", "a") as f:
+            with open(Debugging_file, "a") as f:
                 f.write(f"Stored data for {new_username}: {new_password}\n")
                 # self.new_username_entry.delete(0, tk.END)
                 # self.new_password_entry.delete(0, tk.END)
