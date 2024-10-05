@@ -104,18 +104,6 @@ def show_server_info(host, port):
         root, text="Copy-Port", command=copy_info_port)
     copy_button_port.pack(pady=10)
 
-    
-    # def copy_info_IP():
-    #     copy_to_clipboard(f"{host}:{port}")
-    #     messagebox.showinfo(
-    #         "Copied", "IP address copied to clipboard.")
-        
-    # def copy_info_port():
-    #     copy_to_clipboard(f"{host}:{port}")
-    #     messagebox.showinfo(
-    #         "Copied", "Port copied to clipboard.")
-
-
     tk.Button(root, text="End", command=root.destroy).pack(pady=10)
     root.mainloop()
 
